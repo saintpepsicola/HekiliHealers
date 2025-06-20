@@ -1,4 +1,4 @@
-## Interface: 110000
+## Interface: 112000
 ## Title: Hekili Healers
 ## Notes: Extends Hekili with mouseover tracking for health, buffs, and debuffs, with a debug overlay for healers.
 ## Author: Bolt
