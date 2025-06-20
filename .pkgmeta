@@ -22,5 +22,3 @@ ignore:
 required-dependencies:
   - <hekili_project_id>
 
-# Optionally include the README as the changelog when tagging.
-manual-changelog: README.md
