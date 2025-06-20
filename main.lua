@@ -25,6 +25,10 @@ if Private.hekili then
             -- Load only Resto Shaman specialization pack
             local fileName = string.format("%s_resto", Private.lowerClass)
         end
+        if Private.class == "PALADIN" then
+            -- Load only Holy Paladin specialization pack
+            local fileName = string.format("%s_holy", Private.lowerClass)
+        end
     end
 
     local frame = CreateFrame("Frame")

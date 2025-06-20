@@ -644,7 +644,7 @@ function f:PLAYER_LOGIN()
 
     
 
-    print("|cFF00FF00Hekili Healers:|r Successfully initialized. Use /hhdebug to open the debug panel.")
+    print("|cFF00FF00Hekili Healers:|r Successfully initialized.")
 
     initialized = true
 
