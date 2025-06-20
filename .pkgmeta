@@ -1,0 +1,26 @@
+# CurseForge packaging metadata for Hekili Healers
+# Docs: https://support.curseforge.com/en/support/solutions/articles/9000197329-advanced-repository-management
+
+# The generated zip on CurseForge will be named exactly like the AddOn folder
+package-as: HekiliHealers
+
+# Do NOT create a -nolib variant — we don't embed external libraries
+enable-nolib-creation: no
+
+# Strip VCS and CI assets from the release archive
+ignore:
+  - .git
+  - .github
+  - .vscode
+  - .idea
+  - *.bat
+  - *.sh
+  - *.md
+
+# Ensure Hekili is marked as a required dependency on the site (numeric ID)
+# Replace <hekili_project_id> with the real ID once known.
+required-dependencies:
+  - <hekili_project_id>
+
+# Optionally include the README as the changelog when tagging.
+manual-changelog: README.md
