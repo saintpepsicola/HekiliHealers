@@ -1,0 +1,18 @@
+local _, Private = ...
+
+
+if Private.hekili and Private.class == "PRIEST" then
+    local spec = Private.hekili:GetSpecialization(256) -- Discipline Priest spec ID
+    local name = string.format("%s_disc", Private.shortName)
+    local date = 20250621
+
+
+    if Hekili.DB.profile.packs[name] then
+        Hekili.DB.profile.packs[name] = nil
+    end
+
+    -- Placeholder for pack data - replace with actual Hekili pack data string
+    spec:RegisterPack(name, date, [[Hekili:TE1wpUnru4FlRqAVirJs2UxGsxKwUiylWccV9juT9ephhpAhpJzMXBAKwz1hPWtfXBiH4fuf)b6liX)M2i(xW54lXozD3UBAvIIIN5mFFN7NX(J8pZ3JZCG)P7oC39hEWU7ny0bJ2B)r(EUzzGVxgl6C2e8pkwk(7R(PF9L)7VS9xcN)DYC7o0(ZKAgNWXQZnrOm)3)8S5p)zV8N)95)5Vn)VFXRE6t89gNlKUtu(JxHoKhBgeHpV)b(EjcohQecSr(Ei8gDSqc0FVamwHw19OtzgLqnX67DwcueksZ0gxryS2ueUfhIz5s3wfHg4hZfgGxeA1POCSCNof1cCHOeMAcyhu8GVwOWTgDVIWhQS5zesKaSihskc3OTqHkEqpeLzGiD6y2TKQ7(APYMkCOaVxrONJr8ubFr4uHlbLdxGzXhD6IWSCPSiCBrCrOcaoW351QNrATKRNQS3o9CDCjjatIbM3Pevl0quQpvRWSHsz0zGHrIzrDGKnvNBbnU9a4XcRZUz7ccBqSrak(MB3UOrlHJo6SJp9RU8Yvx9Zo(Bo(l(8VFNTQ81Rh29c9cKBnSrVbdBJRWoMCmbCDPUELU20slTQbDBX8Qq2JHCW6hHO8gxYGSi39p6WHBoopoEGumjXnfy0(wh2o6OJgEdci3mOg2rVpCDda3mQA163sGk15YIUyTuQNIfAuDLHHk6uWGRJOZRuAhjwtDKuqDngN7AKtPlRyZvljnNtcJTPzJzw4EyjE4DOEq5k3RPCNN9UVNIaTM6U)iD4dPcRT0uRpwn5tafyerOYBeQZbhssyr4jUQdv2AofZJjsCjutua9KZiSfAJWnJS8izooWb3c7VcMgl(hEOfiKGu7JEF0LLiIs6kntnRL1ANj84mPis4KT42132q6hHPxMgAoRcc0R8icuE3L2TdZtfuR(fwunKUgrl9gLlPYthdvbcP2H(ZtsB8Z7VC2afr89WavI20m4gNAFN5p)j4xCSnMaW)wLV38)6pM)0N3zUF5PlV9q1yw8VNoQ5hNVhOyJLa3)tq4ljeLuGJ6LbPSjIiuKt3LoEpYfXKYGQhciAQilO6cilgIriC31bH6zt053BDopMSJN1r3nPEUFJz3huzASulyQ2WdWaKt4WmIQJ3AjR46w(OcvCE59EwG(4gNxp(6im7clhy(ER2JPiCtSgQN2JfH3)OIWpCyhIravrqJh(2ttzJlSNf6evC04Hb5z96sSjcqYBcfxtUtgtOcOcFdyR8gRTLU)qIV9VE(MGzayEQoyS25KqGfmxiOl32s7eJoplGqpO6MxeShC9Wcxq9bXKP0RfPwNiAVPALOmtuhhKja3mYzIuD4kzCRdEwTKfTC0bRLfux7amlabSop4dU5K1BG2W4I6CkxBjyp1nTa3tCRTvcylNoJAPHndmlANuniTtoXBrIs3sIyjZMuALD12sJH6h8MB(ztyyXEmDLQUQuFbfHYsZ8RdZ72tNHubwwngvj3YAZBUC9kx0anvCkZWsxX2fHBueEbdLep5aBIoxYdOxf5Yll3TVT2SZYy8OYolc3b)UQ1xLkWbMlPVUVTA520yUySupH2SIEuZCIOZlVbWonQBT5GzSqGthWfOWFmg644yVUCsTpgWZRUpxZ53OUMGlUaVusqm7cTjaVPI1jSunXscXY04SvTvyxQAzvsAAT0VDD1(I0aGQ321iYQG0R6T)OBZHx(rsPWlyJ2QmRR6J))d]])
+    
+    Hekili:LoadScripts()
+end 
