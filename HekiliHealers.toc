@@ -2,7 +2,7 @@
 ## Title: Hekili Healers
 ## Notes: Extends Hekili with mouseover tracking for health, buffs, and debuffs, with a debug overlay for healers.
 ## Author: Bolt
-## Version: 1.0.0
+## Version: 1.2.0
 ## Dependencies: Hekili
 ## SavedVariables: HekiliHealersDB
 

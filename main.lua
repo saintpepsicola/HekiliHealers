@@ -1,5 +1,4 @@
 -- Hekili Healers Packs
--- An addon to provide custom Hekili profiles for Priest specializations
 local ADDON_NAME, Private = ...
 
 Private.name = "Hekili Healers Packs"

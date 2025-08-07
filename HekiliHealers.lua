@@ -1,5 +1,4 @@
 -- HekiliHelper.lua
--- A simple addon to extend Hekili with mouseover unit functionality for Cell frames (CellPartyFrameHeaderUnitButtonX, CellRaidFrameHeaderUnitButtonX)
 local addonName, ns = ...
 
 -- Create our addon frame and register for events
