@@ -12,7 +12,6 @@ f:RegisterEvent("GROUP_ROSTER_UPDATE")
 f:RegisterEvent("UNIT_AURA")
 f:RegisterEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED")
 
-
 -- Create a debug overlay frame
 local debugFrame = CreateFrame("Frame", "HekiliHelperDebugFrame", UIParent, "BackdropTemplate")
 debugFrame:SetSize(400, 300)
@@ -86,11 +85,9 @@ local function CreateAuraProxy()
     }
     local mt = {
         __index = function(t, k)
-            -- Return the default aura table for any key
             return defaultAura
         end,
         __newindex = function(t, k, v)
-            -- Allow setting values directly (e.g., during ScanMouseoverAuras)
             rawset(t, k, v)
         end
     }
@@ -98,7 +95,6 @@ local function CreateAuraProxy()
     return proxy
 end
 
--- Function to check group health status
 -- Function to check group health status
 CheckGroupHealth = function()
     if not (initialized and ns.Hekili and ns.State) then
@@ -110,7 +106,6 @@ CheckGroupHealth = function()
     local inGroup = IsInGroup()
     local lowHealthCount = 0
     
-    -- Initialize state values if they don't exist
     ns.State.group_heal_needed = false
     ns.State.low_health_members = 0
     
@@ -118,7 +113,6 @@ CheckGroupHealth = function()
         return
     end
     
-    -- Check player's own health and heal absorbs
     local playerHealth = UnitHealth("player") or 0
     local playerMaxHealth = UnitHealthMax("player") or 1
     local playerHealAbsorb = UnitGetTotalHealAbsorbs("player") or 0
@@ -129,7 +123,6 @@ CheckGroupHealth = function()
         lowHealthCount = lowHealthCount + 1
     end
     
-    -- Check party/raid members' health and heal absorbs
     if inRaid then
         for i = 1, numGroupMembers do
             local unit = "raid" .. i
@@ -146,7 +139,7 @@ CheckGroupHealth = function()
             end
         end
     else
-        for i = 1, numGroupMembers - 1 do  -- Don't count the player twice
+        for i = 1, numGroupMembers - 1 do
             local unit = "party" .. i
             if UnitExists(unit) and UnitInRange(unit) and not UnitIsUnit(unit, "player") then
                 local health = UnitHealth(unit) or 0
@@ -162,7 +155,6 @@ CheckGroupHealth = function()
         end
     end
     
-    -- Update state values
     ns.State.low_health_members = lowHealthCount
     ns.State.group_heal_needed = (lowHealthCount >= healingNeededCount)
     
@@ -175,7 +167,6 @@ IsMouseOverUnitFrame = function()
     local inRaid = IsInRaid()
     local inGroup = IsInGroup()
 
-    -- Check solo frame
     local soloFrame = _G["CellSoloFramePlayer"]
     if soloFrame and soloFrame:IsVisible() and (soloFrame:IsMouseOver() or (soloFrame.widgets and soloFrame.widgets.healthBar and soloFrame.widgets.healthBar:IsMouseOver())) then
         if soloFrame.states and soloFrame.states.unit and UnitExists(soloFrame.states.unit) then
@@ -187,7 +178,6 @@ IsMouseOverUnitFrame = function()
         end
     end
 
-    -- Check Cell party frames
     for i = 1, numGroupMembers do
         local unitFrame = _G["CellPartyFrameHeaderUnitButton"..i]
         if unitFrame and unitFrame:IsVisible() and (unitFrame:IsMouseOver() or (unitFrame.healthBar and unitFrame.healthBar:IsMouseOver())) then
@@ -201,18 +191,16 @@ IsMouseOverUnitFrame = function()
         end
     end
 
-    -- Check Cell raid frames
     if inRaid then
         for i = 1, numGroupMembers do
-            -- Check headers 0 through 7
             for headerNum = 0, 7 do
                 local unitFrame = _G["CellRaidFrameHeader"..headerNum.."UnitButton"..i]
-            if unitFrame and unitFrame:IsVisible() and (unitFrame:IsMouseOver() or (unitFrame.healthBar and unitFrame.healthBar:IsMouseOver())) then
-                if unitFrame.unit and UnitExists(unitFrame.unit) then
-                    local frameUnitGUID = UnitGUID(unitFrame.unit)
-                    local mouseoverGUID = UnitExists("mouseover") and UnitGUID("mouseover") or nil
-                    if frameUnitGUID and mouseoverGUID and frameUnitGUID == mouseoverGUID and (UnitInParty("mouseover") or UnitInRaid("mouseover")) then
-                        return true
+                if unitFrame and unitFrame:IsVisible() and (unitFrame:IsMouseOver() or (unitFrame.healthBar and unitFrame.healthBar:IsMouseOver())) then
+                    if unitFrame.unit and UnitExists(unitFrame.unit) then
+                        local frameUnitGUID = UnitGUID(unitFrame.unit)
+                        local mouseoverGUID = UnitExists("mouseover") and UnitGUID("mouseover") or nil
+                        if frameUnitGUID and mouseoverGUID and frameUnitGUID == mouseoverGUID and (UnitInParty("mouseover") or UnitInRaid("mouseover")) then
+                            return true
                         end
                     end
                 end
@@ -220,7 +208,6 @@ IsMouseOverUnitFrame = function()
         end
     end
 
-    -- Fallback: Check PlayerFrame
     if PlayerFrame and PlayerFrame:IsVisible() and (PlayerFrame:IsMouseOver() or (PlayerFrame.healthBar and PlayerFrame.healthBar:IsMouseOver())) then
         if PlayerFrame.unit and UnitExists(PlayerFrame.unit) then
             local frameUnitGUID = UnitGUID(PlayerFrame.unit)
@@ -239,8 +226,7 @@ f:SetScript("OnUpdate", function(self, elapsed)
     lastMouseoverCheck = (lastMouseoverCheck or 0) + elapsed
     lastGroupHealthCheck = (lastGroupHealthCheck or 0) + elapsed
     
-    -- Check mouseover status (throttled)
-    if lastMouseoverCheck >= 0.1 then -- Throttle to 10 checks per second
+    if lastMouseoverCheck >= 0.1 then
         lastMouseoverCheck = 0
         
         if UnitExists("mouseover") then
@@ -252,14 +238,12 @@ f:SetScript("OnUpdate", function(self, elapsed)
         end
     end
     
-    -- Check group health (throttled less frequently)
-    if lastGroupHealthCheck >= 0.5 then -- Throttle to 2 checks per second
+    if lastGroupHealthCheck >= 0.5 then
         lastGroupHealthCheck = 0
         CheckGroupHealth()
     end
 end)
 
--- Function to scan mouseover unit auras
 -- Function to scan mouseover unit auras
 local function ScanMouseoverAuras()
     if not UnitExists("mouseover") then return end
@@ -277,7 +261,31 @@ local function ScanMouseoverAuras()
         ns.State.mouseover.debuff[k] = nil
     end
     
-    -- Scan buffs
+    ns.State.mouseover.dispel = false
+    
+    local _, playerClass = UnitClass("player")
+    local specID = GetSpecializationInfo(GetSpecialization() or 0) or 0
+    local dispelTypes = {}
+    
+    if playerClass == "PRIEST" and (specID == 256 or specID == 257) then
+        dispelTypes["Magic"] = true
+        dispelTypes["Disease"] = true
+    elseif playerClass == "DRUID" and specID == 105 then
+        dispelTypes["Curse"] = true
+        dispelTypes["Poison"] = true
+    elseif playerClass == "MONK" and specID == 270 then
+        dispelTypes["Magic"] = true
+        dispelTypes["Poison"] = true
+        dispelTypes["Disease"] = true
+    elseif playerClass == "PALADIN" and specID == 65 then
+        dispelTypes["Magic"] = true
+        dispelTypes["Poison"] = true
+        dispelTypes["Disease"] = true
+    elseif playerClass == "SHAMAN" and specID == 264 then
+        dispelTypes["Curse"] = true
+        dispelTypes["Magic"] = true
+    end
+    
     local i = 1
     while true do
         local aura = C_UnitAuras.GetBuffDataByIndex("mouseover", i)
@@ -307,7 +315,6 @@ local function ScanMouseoverAuras()
         i = i + 1
     end
     
-    -- Scan debuffs and flag heal absorbs
     i = 1
     while true do
         local aura = C_UnitAuras.GetDebuffDataByIndex("mouseover", i)
@@ -326,19 +333,23 @@ local function ScanMouseoverAuras()
             debuff.up = true
             debuff.down = false
             debuff.remains = aura.expirationTime and (aura.expirationTime - GetTime()) or 0
-            debuff.is_heal_absorb = false -- Default to false
+            debuff.is_heal_absorb = false
             
             local key = string.lower(aura.name and aura.name:gsub("[%s%-]+", "_") or "unknown")
             ns.State.mouseover.debuff[key] = ns.State.mouseover.debuff[tostring(aura.spellId)]
             
-            -- Flag known heal absorb debuffs
             local healAbsorbSpellIDs = {
-                [49576] = true, -- Necrotic Strike (example)
-                [12294] = true, -- Mortal Strike (example)
-                -- Add more heal absorb spell IDs as needed
+                [49576] = true, -- Necrotic Strike
+                [12294] = true, -- Mortal Strike
             }
             if healAbsorbSpellIDs[aura.spellId] then
                 debuff.is_heal_absorb = true
+            end
+            
+            if UnitIsFriend("player", "mouseover") and (UnitInParty("mouseover") or UnitIsUnit("player", "mouseover")) then
+                if dispelTypes[aura.dispelName] then
+                    ns.State.mouseover.dispel = true
+                end
             end
         end
         i = i + 1
@@ -400,12 +411,16 @@ local function UpdateDebugOverlay()
     local isPlayer = ns.State.mouseover.is_player and "Yes" or "No"
     local isFriendly = UnitIsFriend("player", "mouseover") and "Yes" or "No"
     local role = ns.State.mouseover.role or "Unknown"
+    local isTank = ns.State.mouseover.isTank and "Yes" or "No"
+    local hasDispel = ns.State.mouseover.dispel and "Yes" or "No"
 
     table.insert(lines, string.format("|cFFFFFFFF%s|r", unitName))
     table.insert(lines, string.format("Health: %d / %d (%.1f%%)", health, maxHealth, healthPct))
     table.insert(lines, string.format("Is Player: %s", isPlayer))
     table.insert(lines, string.format("Is Friendly: %s", isFriendly))
     table.insert(lines, string.format("Role: %s", role))
+    table.insert(lines, string.format("Is Tank: %s", isTank))
+    table.insert(lines, string.format("Has Dispellable Debuff: %s", hasDispel))
     table.insert(lines, "")
 
     table.insert(lines, "|cFF00FF00Buffs:|r")
@@ -454,30 +469,30 @@ local function UpdateHekiliMouseoverState()
     ns.State.mouseover.buff = ns.State.mouseover.buff or {}
     ns.State.mouseover.debuff = ns.State.mouseover.debuff or {}
     ns.State.mouseover.health = ns.State.mouseover.health or {}
+    ns.State.mo = ns.State.mouseover
     
     if UnitExists("mouseover") and IsMouseOverUnitFrame() then
         local health = UnitHealth("mouseover") or 0
         local maxHealth = UnitHealthMax("mouseover") or 1
         local healAbsorb = UnitGetTotalHealAbsorbs("mouseover") or 0
-        -- Calculate base health percentage
         local healthPct = health / maxHealth * 100
-        -- Adjust for heal absorb: treat absorb as additional health to heal through
         local effectiveHealth = math.max(0, health - healAbsorb)
         local effectiveHealthPct = maxHealth > 0 and (effectiveHealth / maxHealth * 100) or 0
 
         ns.State.mouseover.exists = true
         ns.State.mouseover.health.current = health
         ns.State.mouseover.health.max = maxHealth
-        ns.State.mouseover.health.pct = effectiveHealthPct -- Use effective percentage
-        ns.State.mouseover.health.percent = effectiveHealthPct -- Mirror for consistency
-        ns.State.mouseover.health.raw_pct = healthPct -- Store raw percentage for debug
-        ns.State.mouseover.health.heal_absorb = healAbsorb -- Store absorb amount for debug
+        ns.State.mouseover.health.pct = effectiveHealthPct
+        ns.State.mouseover.health.percent = effectiveHealthPct
+        ns.State.mouseover.health.raw_pct = healthPct
+        ns.State.mouseover.health.heal_absorb = healAbsorb
         ns.State.mouseover.unit = UnitGUID("mouseover")
         ns.State.mouseover.name = UnitName("mouseover") or "Unknown"
         ns.State.mouseover.is_player = UnitIsPlayer("mouseover")
         ns.State.mouseover.is_self = UnitIsUnit("player", "mouseover")
         local role = UnitGroupRolesAssigned("mouseover")
         ns.State.mouseover.role = role ~= "NONE" and role or "Unknown"
+        ns.State.mouseover.isTank = role == "TANK"
 
         ScanMouseoverAuras()
         mouseoverActive = true
@@ -494,20 +509,15 @@ ClearMouseoverState = function()
         return 
     end
     
-    -- Ensure mouseover table exists
     if not ns.State.mouseover then
         ns.State.mouseover = {}
     end
     
-    -- Clear properties individually
     ns.State.mouseover.exists = false
-    
-    -- Ensure health table exists
     if not ns.State.mouseover.health then
         ns.State.mouseover.health = {}
     end
     
-    -- Clear health values
     ns.State.mouseover.health.current = 0
     ns.State.mouseover.health.max = 0
     ns.State.mouseover.health.pct = 0
@@ -515,18 +525,19 @@ ClearMouseoverState = function()
     ns.State.mouseover.health.raw_pct = 0
     ns.State.mouseover.health.heal_absorb = 0
     
-    -- Clear unit info
     ns.State.mouseover.unit = nil
     ns.State.mouseover.name = nil
     ns.State.mouseover.is_player = false
     ns.State.mouseover.is_self = false
     ns.State.mouseover.role = nil
+    ns.State.mouseover.isTank = false
+    ns.State.mouseover.dispel = false
     
-    -- Clear buffs and debuffs
     ns.State.mouseover.buff = {}
     ns.State.mouseover.debuff = {}
     
-    -- Set metatables for empty buff/debuff tables
+    ns.State.mo = ns.State.mouseover
+    
     setmetatable(ns.State.mouseover.buff, {
         __index = function(t, k)
             t[k] = {
@@ -564,12 +575,10 @@ ClearMouseoverState = function()
         end
     })
     
-    -- Reset tracking variables
     lastMouseoverGUID = nil
     lastMouseoverHealth = 0
     mouseoverActive = false
     
-    -- Update debug overlay
     UpdateDebugOverlay()
 end
 
@@ -598,31 +607,28 @@ function f:ADDON_LOADED(loadedAddon)
         _G.Hekili.State = _G.Hekili.State or {}
         ns.State = _G.Hekili.State
 
-        -- Initialize mouseover table and subtables
         ns.State.mouseover = ns.State.mouseover or {}
         ns.State.mouseover.health = ns.State.mouseover.health or {}
         ns.State.mouseover.buff = CreateAuraProxy()
         ns.State.mouseover.debuff = CreateAuraProxy()
+        ns.State.mo = ns.State.mouseover
 
-        -- Set default health values
         ns.State.mouseover.health.current = 0
         ns.State.mouseover.health.max = 0
         ns.State.mouseover.health.pct = 0
         ns.State.mouseover.health.percent = 0
 
-        -- Set default core properties
         ns.State.mouseover.exists = false
         ns.State.mouseover.unit = nil
         ns.State.mouseover.name = nil
         ns.State.mouseover.is_player = false
         ns.State.mouseover.is_self = false
         ns.State.mouseover.role = nil
+        ns.State.mouseover.isTank = false
+        ns.State.mouseover.dispel = false
 
-        -- Initialize group healing variables
         ns.State.group_heal_needed = false
         ns.State.low_health_members = 0
-        
-
     end
 end
 
@@ -635,19 +641,16 @@ function f:PLAYER_LOGIN()
     ns.Hekili = _G.Hekili
     ns.State = _G.Hekili.State
 
-    -- Ensure mouseover table exists (redundant but safe)
     ns.State.mouseover = ns.State.mouseover or {}
     ns.State.mouseover.health = ns.State.mouseover.health or {}
     ns.State.mouseover.buff = CreateAuraProxy()
     ns.State.mouseover.debuff = CreateAuraProxy()
-
-    
+    ns.State.mo = ns.State.mouseover
 
     print("|cFF00FF00Hekili Healers:|r Successfully initialized.")
 
     initialized = true
 
-    -- Check group health immediately after initialization
     C_Timer.After(1, function()
         if CheckGroupHealth then
             CheckGroupHealth()
@@ -669,7 +672,6 @@ function f:PLAYER_TARGET_CHANGED()
     ClearMouseoverState()
 end
 
-
 function f:UNIT_HEALTH(unit)
     if unit == "mouseover" and UnitExists("mouseover") and IsMouseOverUnitFrame() then
         CheckMouseover()
@@ -677,7 +679,6 @@ function f:UNIT_HEALTH(unit)
         ClearMouseoverState()
     end
     
-    -- Check group health when any unit's health changes
     if UnitInParty(unit) or UnitInRaid(unit) or unit == "player" then
         CheckGroupHealth()
     end
@@ -690,7 +691,6 @@ function f:UNIT_HEAL_ABSORB_AMOUNT_CHANGED(unit)
 end
 
 function f:GROUP_ROSTER_UPDATE()
-    -- Re-check group health when group composition changes
     CheckGroupHealth()
 end
 
@@ -703,7 +703,6 @@ end)
 -- Register slash command
 SLASH_HHDEBUG1 = '/hhdebug'
 
--- Command handler to toggle the debug panel
 SlashCmdList["HHDEBUG"] = function(msg)
     if debugFrame:IsShown() then
         debugFrame:Hide()
