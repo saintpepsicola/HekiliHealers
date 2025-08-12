@@ -16,4 +16,4 @@ priest_holy.lua
 druid_resto.lua
 shaman_resto.lua
 paladin_holy.lua
-evoker_preservation.lua
+
