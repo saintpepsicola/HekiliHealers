@@ -62,6 +62,7 @@ local lastMouseoverGUID = nil
 local lastMouseoverHealth = 0
 local lastMouseoverCheck = 0
 local mouseoverActive = false
+local lastAuraRefresh = 0
 
 -- Forward declarations for locals referenced before definition
 local ClearMouseoverState
@@ -186,7 +187,21 @@ local function CreateAuraProxy()
     }
     local mt = {
         __index = function(t, k)
-            return defaultAura
+            -- Return a unique default table per missing key to avoid shared state
+            local v = {
+                name = defaultAura.name,
+                count = defaultAura.count,
+                duration = defaultAura.duration,
+                expires = defaultAura.expires,
+                applied = defaultAura.applied,
+                caster = defaultAura.caster,
+                id = defaultAura.id,
+                up = defaultAura.up,
+                down = defaultAura.down,
+                remains = defaultAura.remains
+            }
+            rawset(t, k, v)
+            return v
         end,
         __newindex = function(t, k, v)
             rawset(t, k, v)
@@ -194,6 +209,12 @@ local function CreateAuraProxy()
     }
     setmetatable(proxy, mt)
     return proxy
+end
+
+local function WipeTable(tbl)
+    for k in pairs(tbl) do
+        tbl[k] = nil
+    end
 end
 
 -- Count how many friends look spicy
@@ -275,6 +296,7 @@ end
 -- Babysit mouseovers so we don't stale out
 f:SetScript("OnUpdate", function(self, elapsed)
     lastMouseoverCheck = (lastMouseoverCheck or 0) + elapsed
+    lastAuraRefresh = (lastAuraRefresh or 0) + elapsed
     if lastMouseoverCheck >= 0.1 then
         lastMouseoverCheck = 0
         if UnitExists("mouseover") then
@@ -284,6 +306,11 @@ f:SetScript("OnUpdate", function(self, elapsed)
         elseif mouseoverActive then
             ClearMouseoverState()
         end
+    end
+    if mouseoverActive and UnitExists("mouseover") and lastAuraRefresh >= 0.2 then
+        lastAuraRefresh = 0
+        ScanMouseoverAuras()
+        UpdateDebugOverlay()
     end
 end)
 
@@ -296,9 +323,11 @@ local function ScanMouseoverAuras()
         return
     end
     
-    -- reset containers to default-proxied tables
-    ns.State.mouseover.buff = CreateAuraProxy()
-    ns.State.mouseover.debuff = CreateAuraProxy()
+    -- reset containers but keep identity stable (so external refs stay valid)
+    if not ns.State.mouseover.buff then ns.State.mouseover.buff = CreateAuraProxy() end
+    if not ns.State.mouseover.debuff then ns.State.mouseover.debuff = CreateAuraProxy() end
+    WipeTable(ns.State.mouseover.buff)
+    WipeTable(ns.State.mouseover.debuff)
     
     ns.State.mouseover.dispel = false
     
@@ -638,7 +667,8 @@ function f:UPDATE_MOUSEOVER_UNIT()
 end
 
 function f:UNIT_AURA(unit)
-    if IsMouseOverUnitFrame() then
+    if not UnitExists("mouseover") then return end
+    if IsMouseOverUnitFrame() and (unit == "mouseover" or UnitGUID(unit) == ns.State.mouseover.unit) then
         UpdateHekiliMouseoverState()
     end
 end
@@ -684,4 +714,19 @@ SlashCmdList["HHDEBUG"] = function(msg)
     else
         debugFrame:Show()
     end
+end
+
+-- /hhnews -> show or reset the What's New modal
+SLASH_HHNEWS1 = '/hhnews'
+SlashCmdList["HHNEWS"] = function(msg)
+    msg = tostring(msg or ""):lower()
+    if msg:find("reset") then
+        HekiliHealersDB.newsShownVersion = nil
+        print("|cFF00FF00Hekili Healers:|r Reset What's New flag. Reload or run /hhnews again.")
+        return
+    end
+    if not whatsNew then
+        whatsNew = CreateWhatsNewFrame()
+    end
+    whatsNew:Show()
 end
