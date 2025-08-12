@@ -288,8 +288,7 @@ end
 -- Are we actually mousing a unit frame (and not the void)?
 IsMouseOverUnitFrame = function()
     -- Keep it simple: any assistable mouseover counts.
-    if not UnitExists("mouseover") then return false end
-    if UnitCanAssist("player", "mouseover") or UnitIsFriend("player", "mouseover") then
+    if UnitExists("mouseover") and (UnitInParty("mouseover") or UnitInRaid("mouseover")) then
         return true
     end
     return false
