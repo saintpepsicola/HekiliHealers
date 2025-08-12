@@ -1,8 +1,6 @@
 local addonName, ns = ...
 
--- Centralized pack definitions so you paste once per spec.
--- Paste your Hekili export strings below and bump dates as needed.
--- Names can be anything; keep them stable for users.
+
 
 ns.Packs = ns.Packs or {
     -- Holy Priest (257)
