@@ -1,7 +1,7 @@
--- HekiliHelper.lua
+-- Hekili Healers — core vibes
 local addonName, ns = ...
 
--- Create our addon frame and register for events
+-- Frame to catch the chaos (events)
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_LOGIN")
@@ -12,8 +12,8 @@ f:RegisterEvent("GROUP_ROSTER_UPDATE")
 f:RegisterEvent("UNIT_AURA")
 f:RegisterEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED")
 
--- Create a debug overlay frame
-local debugFrame = CreateFrame("Frame", "HekiliHelperDebugFrame", UIParent, "BackdropTemplate")
+-- Debug window because shiny
+local debugFrame = CreateFrame("Frame", "HekiliHealersDebugFrame", UIParent, "BackdropTemplate")
 debugFrame:SetSize(400, 300)
 debugFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
 debugFrame:SetBackdrop({
@@ -29,13 +29,13 @@ debugFrame:RegisterForDrag("LeftButton")
 debugFrame:SetScript("OnDragStart", debugFrame.StartMoving)
 debugFrame:SetScript("OnDragStop", debugFrame.StopMovingOrSizing)
 
--- Add header
+-- Header (make it official)
 local header = debugFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 header:SetPoint("TOPLEFT", debugFrame, "TOPLEFT", 10, -10)
-header:SetText("HekiliHelper Mouseover Info")
+header:SetText("Hekili Healers — Mouseover Info")
 
--- Create scrolling text frame for target details
-local scrollFrame = CreateFrame("ScrollFrame", "HekiliHelperDebugScrollFrame", debugFrame, "UIPanelScrollFrameTemplate")
+-- Scrolling text, because buffs get wordy
+local scrollFrame = CreateFrame("ScrollFrame", "HekiliHealersDebugScrollFrame", debugFrame, "UIPanelScrollFrameTemplate")
 scrollFrame:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
 scrollFrame:SetPoint("BOTTOMRIGHT", debugFrame, "BOTTOMRIGHT", -30, 10)
 
@@ -50,11 +50,11 @@ debugText:SetJustifyH("LEFT")
 debugText:SetJustifyV("TOP")
 debugText:SetText("No mouseover target selected.\n")
 
--- Close button
+-- Close button (in case you hate fun)
 local closeButton = CreateFrame("Button", nil, debugFrame, "UIPanelCloseButton")
 closeButton:SetPoint("TOPRIGHT", debugFrame, "TOPRIGHT", 0, 0)
 
--- Hide by default
+-- Hide by default; summon with /hhdebug
 debugFrame:Hide()
 
 local initialized = false
@@ -63,8 +63,97 @@ local lastMouseoverHealth = 0
 local lastMouseoverCheck = 0
 local mouseoverActive = false
 
--- Group healing variables
-local lastGroupHealthCheck = 0
+-- Forward declarations for locals referenced before definition
+local ClearMouseoverState
+local CheckGroupHealth
+local IsMouseOverUnitFrame
+
+-- What's New sourced from a separate file
+local NEWS_VERSION = ns.WhatsNew and ns.WhatsNew.NEWS_VERSION or 1
+local DISCORD_URL = ns.WhatsNew and ns.WhatsNew.DISCORD_URL or "https://discord.gg/hekilihealers"
+
+-- SavedVariables root
+HekiliHealersDB = HekiliHealersDB or {}
+
+-- Build a fun little What's New window
+local function CreateWhatsNewFrame()
+    local frame = CreateFrame("Frame", "HekiliHealersWhatsNew", UIParent, "BackdropTemplate")
+    frame:SetSize(460, 320)
+    frame:SetPoint("CENTER")
+    frame:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    frame:SetBackdropColor(0, 0, 0, 0.85)
+    frame:Hide()
+
+    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    title:SetPoint("TOP", 0, -12)
+    title:SetText("What's New — Hekili Healers")
+
+    local sub = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    sub:SetPoint("TOP", title, "BOTTOM", 0, -6)
+    sub:SetText("Fresh bits, fewer shackles")
+
+    local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 16, -70)
+    scroll:SetPoint("BOTTOMRIGHT", -36, 56)
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(1, 1)
+    scroll:SetScrollChild(child)
+
+    local body = child:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    body:SetPoint("TOPLEFT")
+    body:SetJustifyH("LEFT")
+    body:SetJustifyV("TOP")
+    body:SetWidth(400)
+
+    local getLines = ns.WhatsNew and ns.WhatsNew.getLines
+    local lines = (type(getLines) == "function") and getLines(ns.WhatsNew) or {}
+    if #lines == 0 then
+        lines = { "Welcome back!", "Patch notes were too shy to show up." }
+    end
+    body:SetText(table.concat(lines, "\n\n"))
+
+    local close = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    close:SetSize(120, 24)
+    close:SetPoint("BOTTOMRIGHT", -14, 14)
+    close:SetText("Heck yeah!")
+    close:SetScript("OnClick", function()
+        HekiliHealersDB.newsShownVersion = NEWS_VERSION
+        frame:Hide()
+    end)
+
+    local copy = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    copy:SetSize(160, 24)
+    copy:SetPoint("BOTTOMLEFT", 14, 14)
+    copy:SetText("Print Discord Link")
+    copy:SetScript("OnClick", function()
+        print("|cFF00FF00Hekili Healers:|r Discord:", DISCORD_URL)
+    end)
+
+    local x = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+    x:SetPoint("TOPRIGHT", 2, 2)
+    x:SetScript("OnClick", function()
+        HekiliHealersDB.newsShownVersion = NEWS_VERSION
+        frame:Hide()
+    end)
+
+    return frame
+end
+
+local whatsNew
+local function ShowWhatsNewIfNeeded()
+    if HekiliHealersDB.newsShownVersion == NEWS_VERSION then return end
+    if not whatsNew then
+        whatsNew = CreateWhatsNewFrame()
+    end
+    whatsNew:Show()
+end
+
+-- Knobs you might want to tweak later
 local healThreshold = 76  -- Health percentage threshold below which a player is considered to need healing
 local healingNeededCount = 3  -- Number of group members that need to be injured before group_heal_needed is true
 
@@ -95,7 +184,7 @@ local function CreateAuraProxy()
     return proxy
 end
 
--- Function to check group health status
+-- Count how many friends look spicy
 CheckGroupHealth = function()
     if not (initialized and ns.Hekili and ns.State) then
         return
@@ -161,74 +250,21 @@ CheckGroupHealth = function()
     return lowHealthCount >= healingNeededCount
 end
 
--- Function to check if the mouse is over a Cell unit frame
+-- Are we actually mousing a unit frame (and not the void)?
 IsMouseOverUnitFrame = function()
-    local numGroupMembers = GetNumGroupMembers()
-    local inRaid = IsInRaid()
-    local inGroup = IsInGroup()
-
-    local soloFrame = _G["CellSoloFramePlayer"]
-    if soloFrame and soloFrame:IsVisible() and (soloFrame:IsMouseOver() or (soloFrame.widgets and soloFrame.widgets.healthBar and soloFrame.widgets.healthBar:IsMouseOver())) then
-        if soloFrame.states and soloFrame.states.unit and UnitExists(soloFrame.states.unit) then
-            local frameUnitGUID = UnitGUID(soloFrame.states.unit)
-            local mouseoverGUID = UnitExists("mouseover") and UnitGUID("mouseover") or nil
-            if frameUnitGUID and mouseoverGUID and frameUnitGUID == mouseoverGUID then
-                return true
-            end
-        end
+    -- Keep it simple: any assistable mouseover counts.
+    if not UnitExists("mouseover") then return false end
+    if UnitCanAssist("player", "mouseover") or UnitIsFriend("player", "mouseover") then
+        return true
     end
-
-    for i = 1, numGroupMembers do
-        local unitFrame = _G["CellPartyFrameHeaderUnitButton"..i]
-        if unitFrame and unitFrame:IsVisible() and (unitFrame:IsMouseOver() or (unitFrame.healthBar and unitFrame.healthBar:IsMouseOver())) then
-            if unitFrame.unit and UnitExists(unitFrame.unit) then
-                local frameUnitGUID = UnitGUID(unitFrame.unit)
-                local mouseoverGUID = UnitExists("mouseover") and UnitGUID("mouseover") or nil
-                if frameUnitGUID and mouseoverGUID and frameUnitGUID == mouseoverGUID and (UnitInParty("mouseover") or UnitInRaid("mouseover")) then
-                    return true
-                end
-            end
-        end
-    end
-
-    if inRaid then
-        for i = 1, numGroupMembers do
-            for headerNum = 0, 7 do
-                local unitFrame = _G["CellRaidFrameHeader"..headerNum.."UnitButton"..i]
-                if unitFrame and unitFrame:IsVisible() and (unitFrame:IsMouseOver() or (unitFrame.healthBar and unitFrame.healthBar:IsMouseOver())) then
-                    if unitFrame.unit and UnitExists(unitFrame.unit) then
-                        local frameUnitGUID = UnitGUID(unitFrame.unit)
-                        local mouseoverGUID = UnitExists("mouseover") and UnitGUID("mouseover") or nil
-                        if frameUnitGUID and mouseoverGUID and frameUnitGUID == mouseoverGUID and (UnitInParty("mouseover") or UnitInRaid("mouseover")) then
-                            return true
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    if PlayerFrame and PlayerFrame:IsVisible() and (PlayerFrame:IsMouseOver() or (PlayerFrame.healthBar and PlayerFrame.healthBar:IsMouseOver())) then
-        if PlayerFrame.unit and UnitExists(PlayerFrame.unit) then
-            local frameUnitGUID = UnitGUID(PlayerFrame.unit)
-            local mouseoverGUID = UnitExists("mouseover") and UnitGUID("mouseover") or nil
-            if frameUnitGUID and mouseoverGUID and frameUnitGUID == mouseoverGUID and (UnitInParty("mouseover") or UnitInRaid("mouseover")) then
-                return true
-            end
-        end
-    end
-
     return false
 end
 
--- OnUpdate script to check for mouse leaving frames and group health
+-- Babysit mouseovers so we don't stale out
 f:SetScript("OnUpdate", function(self, elapsed)
     lastMouseoverCheck = (lastMouseoverCheck or 0) + elapsed
-    lastGroupHealthCheck = (lastGroupHealthCheck or 0) + elapsed
-    
     if lastMouseoverCheck >= 0.1 then
         lastMouseoverCheck = 0
-        
         if UnitExists("mouseover") then
             if not IsMouseOverUnitFrame() then
                 ClearMouseoverState()
@@ -237,29 +273,20 @@ f:SetScript("OnUpdate", function(self, elapsed)
             ClearMouseoverState()
         end
     end
-    
-    if lastGroupHealthCheck >= 0.5 then
-        lastGroupHealthCheck = 0
-        CheckGroupHealth()
-    end
 end)
 
--- Function to scan mouseover unit auras
+-- Poke auras off the mouseover
 local function ScanMouseoverAuras()
     if not UnitExists("mouseover") then return end
     
     if not C_UnitAuras or not C_UnitAuras.GetBuffDataByIndex or not C_UnitAuras.GetDebuffDataByIndex then
-        print("|cFFFF0000HekiliHelper Error|r: C_UnitAuras API is unavailable. Please check for addon conflicts or repair your game.")
+        print("|cFFFF0000Hekili Healers Error|r: C_UnitAuras API is unavailable. Please check for addon conflicts or repair your game.")
         return
     end
     
-    for k, _ in pairs(ns.State.mouseover.buff) do
-        ns.State.mouseover.buff[k] = nil
-    end
-    
-    for k, _ in pairs(ns.State.mouseover.debuff) do
-        ns.State.mouseover.debuff[k] = nil
-    end
+    -- reset containers to default-proxied tables
+    ns.State.mouseover.buff = CreateAuraProxy()
+    ns.State.mouseover.debuff = CreateAuraProxy()
     
     ns.State.mouseover.dispel = false
     
@@ -355,45 +382,10 @@ local function ScanMouseoverAuras()
         i = i + 1
     end
     
-    setmetatable(ns.State.mouseover.buff, {
-        __index = function(t, k)
-            t[k] = {
-                name = "unknown",
-                count = 0,
-                duration = 0,
-                expires = 0,
-                applied = 0,
-                caster = "nobody",
-                id = 0,
-                up = false,
-                down = true,
-                remains = 0
-            }
-            return t[k]
-        end
-    })
-    
-    setmetatable(ns.State.mouseover.debuff, {
-        __index = function(t, k)
-            t[k] = {
-                name = "unknown",
-                count = 0,
-                duration = 0,
-                expires = 0,
-                applied = 0,
-                caster = "nobody",
-                id = 0,
-                up = false,
-                down = true,
-                remains = 0,
-                is_heal_absorb = false
-            }
-            return t[k]
-        end
-    })
+    -- CreateAuraProxy already supplies sane defaults via __index
 end
 
--- Function to update the overlay with mouseover target details
+-- Paint the overlay with whatever we found
 local function UpdateDebugOverlay()
     local lines = {}
     
@@ -426,11 +418,12 @@ local function UpdateDebugOverlay()
     table.insert(lines, "|cFF00FF00Buffs:|r")
     local buffCount = 0
     if ns.State.mouseover.buff then
-        for spellID, buff in pairs(ns.State.mouseover.buff) do
-            if type(buff) == "table" and buff.up then
+        for spellKey, buff in pairs(ns.State.mouseover.buff) do
+            local spellIdNumeric = tonumber(spellKey)
+            if spellIdNumeric and type(buff) == "table" and buff.up then
                 local remains = buff.remains or 0
-                table.insert(lines, string.format("- %s (ID: %s, %d stacks, %.1f sec left)", 
-                    buff.name or "Unknown", tostring(spellID), buff.count or 0, remains))
+                table.insert(lines, string.format("- %s (ID: %d, %d stacks, %.1f sec left)", 
+                    buff.name or "Unknown", spellIdNumeric, buff.count or 0, remains))
                 buffCount = buffCount + 1
             end
         end
@@ -443,11 +436,12 @@ local function UpdateDebugOverlay()
     table.insert(lines, "|cFFFF0000Debuffs:|r")
     local debuffCount = 0
     if ns.State.mouseover.debuff then
-        for spellID, debuff in pairs(ns.State.mouseover.debuff) do
-            if type(debuff) == "table" and debuff.up then
+        for spellKey, debuff in pairs(ns.State.mouseover.debuff) do
+            local spellIdNumeric = tonumber(spellKey)
+            if spellIdNumeric and type(debuff) == "table" and debuff.up then
                 local remains = debuff.remains or 0
-                table.insert(lines, string.format("- %s (ID: %s, %d stacks, %.1f sec left)", 
-                    debuff.name or "Unknown", tostring(spellID), debuff.count or 0, remains))
+                table.insert(lines, string.format("- %s (ID: %d, %d stacks, %.1f sec left)", 
+                    debuff.name or "Unknown", spellIdNumeric, debuff.count or 0, remains))
                 debuffCount = debuffCount + 1
             end
         end
@@ -461,7 +455,7 @@ local function UpdateDebugOverlay()
     scrollFrame:SetVerticalScroll(0)
 end
 
--- Function to inject data into Hekili state
+-- Stuff our findings into Hekili's state
 local function UpdateHekiliMouseoverState()
     if not (initialized and ns.Hekili and ns.State) then return end
     
@@ -475,7 +469,7 @@ local function UpdateHekiliMouseoverState()
         local health = UnitHealth("mouseover") or 0
         local maxHealth = UnitHealthMax("mouseover") or 1
         local healAbsorb = UnitGetTotalHealAbsorbs("mouseover") or 0
-        local healthPct = health / maxHealth * 100
+        local healthPct = maxHealth > 0 and (health / maxHealth * 100) or 0
         local effectiveHealth = math.max(0, health - healAbsorb)
         local effectiveHealthPct = maxHealth > 0 and (effectiveHealth / maxHealth * 100) or 0
 
@@ -503,7 +497,7 @@ local function UpdateHekiliMouseoverState()
     UpdateDebugOverlay()
 end
 
--- Function to clear mouseover data (make it accessible to other functions)
+-- Wipe mouseover state back to factory settings
 ClearMouseoverState = function()
     if not (initialized and ns.Hekili and ns.State) then 
         return 
@@ -533,47 +527,12 @@ ClearMouseoverState = function()
     ns.State.mouseover.isTank = false
     ns.State.mouseover.dispel = false
     
-    ns.State.mouseover.buff = {}
-    ns.State.mouseover.debuff = {}
+    ns.State.mouseover.buff = CreateAuraProxy()
+    ns.State.mouseover.debuff = CreateAuraProxy()
     
     ns.State.mo = ns.State.mouseover
     
-    setmetatable(ns.State.mouseover.buff, {
-        __index = function(t, k)
-            t[k] = {
-                name = "unknown",
-                count = 0,
-                duration = 0,
-                expires = 0,
-                applied = 0,
-                caster = "nobody",
-                id = 0,
-                up = false,
-                down = true,
-                remains = 0
-            }
-            return t[k]
-        end
-    })
-    
-    setmetatable(ns.State.mouseover.debuff, {
-        __index = function(t, k)
-            t[k] = {
-                name = "unknown",
-                count = 0,
-                duration = 0,
-                expires = 0,
-                applied = 0,
-                caster = "nobody",
-                id = 0,
-                up = false,
-                down = true,
-                remains = 0,
-                is_heal_absorb = false
-            }
-            return t[k]
-        end
-    })
+    -- CreateAuraProxy already supplies sane defaults via __index
     
     lastMouseoverGUID = nil
     lastMouseoverHealth = 0
@@ -582,7 +541,7 @@ ClearMouseoverState = function()
     UpdateDebugOverlay()
 end
 
--- Function to check mouseover unit changes
+-- Did the mouseover change?
 local function CheckMouseover()
     if IsMouseOverUnitFrame() then
         local guid = UnitGUID("mouseover") or "None"
@@ -599,10 +558,10 @@ local function CheckMouseover()
     end
 end
 
--- Main initialization
+-- Boot sequence, engage
 function f:ADDON_LOADED(loadedAddon)
-    if loadedAddon == "HekiliHelper" then
-        print("|cFF00FF00Hekili Healers:|r Initializing mouseover state in ADDON_LOADED")
+    -- AddOn name equals the TOC filename (without extension)
+    if loadedAddon == "HekiliHealers" then
         _G.Hekili = _G.Hekili or {}
         _G.Hekili.State = _G.Hekili.State or {}
         ns.State = _G.Hekili.State
@@ -647,7 +606,7 @@ function f:PLAYER_LOGIN()
     ns.State.mouseover.debuff = CreateAuraProxy()
     ns.State.mo = ns.State.mouseover
 
-    print("|cFF00FF00Hekili Healers:|r Successfully initialized.")
+        print("|cFF00FF00Hekili Healers:|r Successfully initialized.")
 
     initialized = true
 
@@ -655,6 +614,11 @@ function f:PLAYER_LOGIN()
         if CheckGroupHealth then
             CheckGroupHealth()
         end
+    end)
+
+    -- Show the What's New window once per release
+    C_Timer.After(2, function()
+        ShowWhatsNewIfNeeded()
     end)
 end
 
@@ -700,7 +664,7 @@ f:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Register slash command
+-- Slash it
 SLASH_HHDEBUG1 = '/hhdebug'
 
 SlashCmdList["HHDEBUG"] = function(msg)
