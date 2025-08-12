@@ -68,9 +68,14 @@ local ClearMouseoverState
 local CheckGroupHealth
 local IsMouseOverUnitFrame
 
--- What's New sourced from a separate file
-local NEWS_VERSION = ns.WhatsNew and ns.WhatsNew.NEWS_VERSION or 1
-local DISCORD_URL = ns.WhatsNew and ns.WhatsNew.DISCORD_URL or "https://discord.gg/hekilihealers"
+-- What's New sourced from a separate file (lookup at runtime)
+local function getNewsVersion()
+    return (ns.WhatsNew and ns.WhatsNew.NEWS_VERSION) or 1
+end
+
+local function getDiscordURL()
+    return (ns.WhatsNew and ns.WhatsNew.DISCORD_URL) or "https://discord.gg/hekilihealers"
+end
 
 -- SavedVariables root
 HekiliHealersDB = HekiliHealersDB or {}
@@ -122,7 +127,15 @@ local function CreateWhatsNewFrame()
     close:SetPoint("BOTTOMRIGHT", -14, 14)
     close:SetText("Heck yeah!")
     close:SetScript("OnClick", function()
-        HekiliHealersDB.newsShownVersion = NEWS_VERSION
+        frame:Hide()
+    end)
+
+    local dont = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    dont:SetSize(160, 24)
+    dont:SetPoint("RIGHT", close, "LEFT", -8, 0)
+    dont:SetText("Don't show again")
+    dont:SetScript("OnClick", function()
+        HekiliHealersDB.newsShownVersion = getNewsVersion()
         frame:Hide()
     end)
 
@@ -131,13 +144,12 @@ local function CreateWhatsNewFrame()
     copy:SetPoint("BOTTOMLEFT", 14, 14)
     copy:SetText("Print Discord Link")
     copy:SetScript("OnClick", function()
-        print("|cFF00FF00Hekili Healers:|r Discord:", DISCORD_URL)
+        print("|cFF00FF00Hekili Healers:|r Discord:", getDiscordURL())
     end)
 
     local x = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     x:SetPoint("TOPRIGHT", 2, 2)
     x:SetScript("OnClick", function()
-        HekiliHealersDB.newsShownVersion = NEWS_VERSION
         frame:Hide()
     end)
 
@@ -146,7 +158,7 @@ end
 
 local whatsNew
 local function ShowWhatsNewIfNeeded()
-    if HekiliHealersDB.newsShownVersion == NEWS_VERSION then return end
+    if HekiliHealersDB.newsShownVersion == getNewsVersion() then return end
     if not whatsNew then
         whatsNew = CreateWhatsNewFrame()
     end
@@ -588,6 +600,9 @@ function f:ADDON_LOADED(loadedAddon)
 
         ns.State.group_heal_needed = false
         ns.State.low_health_members = 0
+
+        -- Show What's New immediately on load if they haven't seen this version
+        ShowWhatsNewIfNeeded()
     end
 end
 
@@ -616,10 +631,6 @@ function f:PLAYER_LOGIN()
         end
     end)
 
-    -- Show the What's New window once per release
-    C_Timer.After(2, function()
-        ShowWhatsNewIfNeeded()
-    end)
 end
 
 function f:UPDATE_MOUSEOVER_UNIT()

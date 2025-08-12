@@ -36,6 +36,19 @@ local function EnsurePackSelection()
     specs[specID] = specs[specID] or {}
     local current = specs[specID].package
 
+    -- If we ship a built-in pack for this spec, install + select it
+    if ns and ns.Packs and ns.Packs[specID] then
+        local shipped = ns.Packs[specID]
+        local specObj = hekili:GetSpecialization(specID)
+        if specObj and shipped and type(shipped.data) == "string" and shipped.data ~= "" then
+            specObj:RegisterPack(shipped.name, shipped.date or 20250101, shipped.data)
+            specs[specID].package = shipped.name
+            hekili:LoadScripts()
+            print(string.format("|cFF00FF00Hekili Healers:|r Loaded built-in pack '%s' for spec %d.", shipped.name, specID))
+            return
+        end
+    end
+
     -- Only set if their current selection is missing or empty, and ours exists.
     local currentExists = current and packs[current]
     if (not currentExists) and packs[desiredPack] then
