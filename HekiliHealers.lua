@@ -68,6 +68,8 @@ local lastAuraRefresh = 0
 local ClearMouseoverState
 local CheckGroupHealth
 local IsMouseOverUnitFrame
+local ScanMouseoverAuras
+local UpdateDebugOverlay
 
 -- What's New sourced from a separate file (lookup at runtime)
 local function getNewsVersion()
@@ -315,7 +317,7 @@ f:SetScript("OnUpdate", function(self, elapsed)
 end)
 
 -- Poke auras off the mouseover
-local function ScanMouseoverAuras()
+function ScanMouseoverAuras()
     if not UnitExists("mouseover") then return end
     
     if not C_UnitAuras or not C_UnitAuras.GetBuffDataByIndex or not C_UnitAuras.GetDebuffDataByIndex then
@@ -427,7 +429,7 @@ local function ScanMouseoverAuras()
 end
 
 -- Paint the overlay with whatever we found
-local function UpdateDebugOverlay()
+function UpdateDebugOverlay()
     local lines = {}
     
     if not ns.State or not ns.State.mouseover or not ns.State.mouseover.exists then

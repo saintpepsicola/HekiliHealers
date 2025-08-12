@@ -8,7 +8,6 @@
 
 HekiliHealers.lua
 whats_new.lua
-import_ui.lua
 packs.lua
 
 main.lua
