@@ -1,21 +1,18 @@
 local _, Private = ...
 
--- Preservation Evoker Hekili pack
 -- Evoker pack (preservation); green beams go brrr
 if Private.hekili and Private.class == "EVOKER" then
     -- Preservation Evoker spec ID is 1468
     local spec = Private.hekili:GetSpecialization(1468)
     local name = string.format("%s_preservation", Private.shortName)
-    local date = 20250717  -- Current date in YYYYMMDD format
+    local date = 20250717  
 
     -- Remove an old pack with same key if user had an older version
     if Private.hekili.DB and Private.hekili.DB.profile and Private.hekili.DB.profile.packs and Private.hekili.DB.profile.packs[name] then
         Private.hekili.DB.profile.packs[name] = nil
     end
 
-    -- TODO: Add actual Preservation Evoker rotation here
-    spec:RegisterPack(name, date, [[Hekili:PlaceholderForPreservationEvokerRotation]])
+    spec:RegisterPack(name, date, [[Hekili:LI1xZTjoq8pl9fpnTnC4y78NE15Ho3dxZntVBgNB6d3uabS2OjcjojrsDMm8z)wb2GaJX0CV4aOD)TRwT7VDv8M6DV3QyIg8(6fUxSW96P344EX0BCN5TsVnd8wLrIEGSbFGtsnVkHhfpaYIGOCL2S8wMGeBGrjYLrOiERcZPm9x4EHDWEHZfZMVy(Cu2miY7RtNF51ERsOXXqLWGkYB1VdeMXazsQqs1uqveqKqrWV9xRoFTaTlexei4STf3vChc98ZDV68zUFSi4(euSVrqL)gvNq5g)vSMYqVIePPcU69l)L)nhySpqxVutKBaTterPP8nt29kLRbPmpttdzqXDn6frYXvOpJY6VMHrddgPch4huLwn5T4JXuCJXCYeuLG)YlnFb)dquWz24Xj6CjHrFUdq1AzlSedn5hkycgR0jozr6pn318bk3pMW3as)Nf8oUpJ5x9Qpd1)dMd0LkGT2pgwdC1iKosiyXIN4Qtlkra(gVBeIQ0JvY4mL5mFNyo2oFzmIdpzoDczKQGQv4z2IJQNiurJPeUVcTkO6O4c3JQiKc4bySFKinnNJs01MU2EBDWd1utZ81jGLfp2X6m3(rqA2QXgn3if5zLrqFoaXyXrVkO0efT0uH5Rx7u9QJeiXBNmsiIrPtXCF6Me9pHLFgYs2knkq5yOYCcftsrsf)zQB3Tvtj)4DUoZwmwx5rqI55AFinusI6uySxqNdoGW9BkHYvFA2K3uggy01qigiDYZgRP79uFmG1axDXrDqne)vN0BqDsxS7hhvgfzldzcr6)hygmWEiOLFXPeAikrGbQCU(2LZ6hCnKMjWGNpHlsjSTNij6Nkm96IkTOt09QMXNFcKlNwFo3U6TvO0cdStjiv7Ypow59nLS2nXVJGLzTtaZBgdodE62gYlDhPNuzuLc4rGFyUuPpM1z0hBAEw1UDzgJSfK9wcvTKTpn1TFNQfWdSNUUfHm2nb1Dnvc7YR6Ue2g2mnWgjoet31Snz31ipNJyQ0s6d4Kh7YckNcAU7vZC9w9erYrTvERUpHQmJ6uoLsrG5LuQcn7MIavEgwTOlcwlWjA2GD3K0OIaew(dGw5ueue8fDLssWqhbCtkDGoHGF2K(TTEmk8jK9LLhBgNcWPJa5hXGrW5fb)ZFJ9(rKGu13)qrWtj0OeBPj8TnwTiGlmG)JmgnIQzn4gBEYyCOXO)koOMCVzUVcIIGPF3aAS9NUWYYprzmRD0oi17fTmAu(jEEAiingwXeANI7(IHErB(WvOfkptkcmJpGbR78wv(u5OQw9XX3)A5yWaNGt8f79zVvrOVJbBcoCADYtrWNkcU0D)KKERApUHNgpGhlmyEyWKIGQwqDg)aZ8BSrN1mgz2ynYmlF9GEwis4071mLdheoK1eZ8E5fZV9Zh2yylIuJxuYK6RfMTrpbS9Azt23wTPheccpHNozNt20EQi42Ly4PXCDyfnMy(4nrdoDBVzaAXRbOw7)YtkmzLKZ01Nt7LS8Ym2XWbIQnx4OV8O9s1DY7QYg)QR)1QWPByASGupm1bXNXIqtElIWLVge238WaWvVgaqM(QtMAKgSeQUJuzczRUsLfRZ3XiSVjUMMc(XugXy9wvuTwzywNtz0BC3VqRbhA5i1tX0YjQ)6WmswoqfQVkJzeTVKTFMn6HuHiNKsHSs9KdoEGV2cy7jcQsnAs0hm34TN((kve6vKU1sBZsmOGwKWTL7SYTfoBrV0M163LxRbKBXo3dYJEX(TUU3sSdym7YpoC(1qCXT6jnC6t3RLUOANT7SgVAArW7kcWRNwvVmGvRUv(W5udOE1nL7JuBuQxDN((O0gL62xVVNUUxF8e4dUAzVHPZo58igs1blvwB8nF70VPZlcEpMRsqEyd1yJnSgSVNDZrh9WAMFBlV7coMR2A2CVDhz2JLtQBQ2kJbjcSgOv5rTJveC2qTDBFNbBgiJjQZF7LSPv7FD5)KwmWgs09fm3Ja(E59m8fRllucLc(ZvexieHefe)NOyFwWWzMxrY1jcP3Q)GKapqz0sP8(Vp]])
 
-    -- Force Hekili to pick up the new pack immediately
     Private.hekili:LoadScripts()
 end
