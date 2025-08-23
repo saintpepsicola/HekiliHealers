@@ -1,8 +1,5 @@
--- Hekili Healers — core vibes
--- print("|cFF00FF00Hekili Healers:|r HekiliHealers.lua loaded and parsed")
 local addonName, ns = ...
 
--- Frame to catch the chaos (events)
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_LOGIN")
@@ -13,7 +10,6 @@ f:RegisterEvent("GROUP_ROSTER_UPDATE")
 f:RegisterEvent("UNIT_AURA")
 f:RegisterEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED")
 
--- Debug window because shiny
 local debugFrame = CreateFrame("Frame", "HekiliHealersDebugFrame", UIParent, "BackdropTemplate")
 debugFrame:SetSize(400, 300)
 debugFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
@@ -30,12 +26,10 @@ debugFrame:RegisterForDrag("LeftButton")
 debugFrame:SetScript("OnDragStart", debugFrame.StartMoving)
 debugFrame:SetScript("OnDragStop", debugFrame.StopMovingOrSizing)
 
--- Header (make it official)
 local header = debugFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 header:SetPoint("TOPLEFT", debugFrame, "TOPLEFT", 10, -10)
 header:SetText("Hekili Healers — Mouseover Info")
 
--- Scrolling text, because buffs get wordy
 local scrollFrame = CreateFrame("ScrollFrame", "HekiliHealersDebugScrollFrame", debugFrame, "UIPanelScrollFrameTemplate")
 scrollFrame:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
 scrollFrame:SetPoint("BOTTOMRIGHT", debugFrame, "BOTTOMRIGHT", -30, 10)
@@ -51,11 +45,9 @@ debugText:SetJustifyH("LEFT")
 debugText:SetJustifyV("TOP")
 debugText:SetText("No mouseover target selected.\n")
 
--- Close button (in case you hate fun)
 local closeButton = CreateFrame("Button", nil, debugFrame, "UIPanelCloseButton")
 closeButton:SetPoint("TOPRIGHT", debugFrame, "TOPRIGHT", 0, 0)
 
--- Hide by default; summon with /hhdebug
 debugFrame:Hide()
 
 local initialized = false
@@ -65,14 +57,12 @@ local lastMouseoverCheck = 0
 local mouseoverActive = false
 local lastAuraRefresh = 0
 
--- Forward declarations for locals referenced before definition
 local ClearMouseoverState
 local CheckGroupHealth
 local IsMouseOverUnitFrame
 local ScanMouseoverAuras
 local UpdateDebugOverlay
 
--- What's New sourced from a separate file (lookup at runtime)
 local function getNewsVersion()
     return (ns.WhatsNew and ns.WhatsNew.NEWS_VERSION) or 1
 end
@@ -81,10 +71,8 @@ local function getDiscordURL()
     return (ns.WhatsNew and ns.WhatsNew.DISCORD_URL) or "https://discord.gg/hekilihealers"
 end
 
--- SavedVariables root
 HekiliHealersDB = HekiliHealersDB or {}
 
--- Build a fun little What's New window
 local function CreateWhatsNewFrame()
     local frame = CreateFrame("Frame", "HekiliHealersWhatsNew", UIParent, "BackdropTemplate")
     frame:SetSize(460, 320)
@@ -169,11 +157,9 @@ local function ShowWhatsNewIfNeeded()
     whatsNew:Show()
 end
 
--- Knobs you might want to tweak later
-local healThreshold = 76  -- Health percentage threshold below which a player is considered to need healing
-local healingNeededCount = 3  -- Number of group members that need to be injured before group_heal_needed is true
+local healThreshold = 76
+local healingNeededCount = 3
 
--- Proxy baby
 local function CreateAuraProxy()
     local proxy = {}
     local defaultAura = {
@@ -184,13 +170,12 @@ local function CreateAuraProxy()
         applied = 0,
         caster = "nobody",
         id = 0,
-        up = false, -- Default to false, as it's not active
-        down = true, -- Default to true, as it's not active
+        up = false,
+        down = true,
         remains = 0
     }
     local mt = {
-        __index = function(t, k)
-            -- Return a unique default table per missing key to avoid shared state
+        __index = function(t, k) 
             local v = {
                 name = defaultAura.name,
                 count = defaultAura.count,
@@ -199,8 +184,8 @@ local function CreateAuraProxy()
                 applied = defaultAura.applied,
                 caster = defaultAura.caster,
                 id = 0,
-                up = false, -- Default to false, as it's not active
-                down = true, -- Default to true, as it's not active
+                up = false,
+                down = true,
                 remains = 0
             }
             rawset(t, k, v)
@@ -220,7 +205,6 @@ local function WipeTable(tbl)
     end
 end
 
--- Count how many friends look spicy
 CheckGroupHealth = function()
     if not (initialized and ns.Hekili and ns.State) then
         return
@@ -286,36 +270,36 @@ CheckGroupHealth = function()
     return lowHealthCount >= healingNeededCount
 end
 
--- Are we actually mousing a unit frame (and not the void)?
-IsMouseOverUnitFrame = function()
-    if UnitExists("mouseover") and (UnitInParty("mouseover") or UnitInRaid("mouseover") or UnitIsUnit("mouseover", "player")) then
-        return true
+function IsMouseOverUnitFrame()
+    local foci = GetMouseFoci()
+    if foci and #foci > 0 then
+        local focus = foci[1]
+        if focus and focus ~= WorldFrame then
+            local unit = focus:GetAttribute("unit") or focus.unit
+            if unit and UnitExists(unit) and UnitIsFriend("player", unit) then
+                return true, unit
+            end
+        end
     end
-    return false
+    return false, nil
 end
 
--- Babysit mouseovers so we don't stale out
 f:SetScript("OnUpdate", function(self, elapsed)
     lastMouseoverCheck = (lastMouseoverCheck or 0) + elapsed
     lastAuraRefresh = (lastAuraRefresh or 0) + elapsed
     if lastMouseoverCheck >= 0.1 then
         lastMouseoverCheck = 0
-        if UnitExists("mouseover") then
-            if not IsMouseOverUnitFrame() then
-                ClearMouseoverState()
-            end
-        elseif mouseoverActive then
+        if not UnitExists("mouseover") then
             ClearMouseoverState()
         end
     end
-    if mouseoverActive and UnitExists("mouseover") and lastAuraRefresh >= 0.2 then
+    if UnitExists("mouseover") and lastAuraRefresh >= 0.2 then
         lastAuraRefresh = 0
         ScanMouseoverAuras()
         UpdateDebugOverlay()
     end
 end)
 
--- Poke auras off the mouseover
 function ScanMouseoverAuras()
     if not UnitExists("mouseover") then return end
     
@@ -324,7 +308,6 @@ function ScanMouseoverAuras()
         return
     end
     
-    -- reset containers but keep identity stable (so external refs stay valid)
     if not ns.State.mouseover.buff then ns.State.mouseover.buff = CreateAuraProxy() end
     if not ns.State.mouseover.debuff then ns.State.mouseover.debuff = CreateAuraProxy() end
     WipeTable(ns.State.mouseover.buff)
@@ -380,12 +363,8 @@ function ScanMouseoverAuras()
             buff.down = false
             buff.remains = aura.expirationTime and (aura.expirationTime - GetTime()) or 0
             
-            local key = string.lower(aura.name and aura.name:gsub("[%s%-]+", "_") or "unknown")
+            local key = string.lower(aura.name and aura.name:gsub("[%s%-]", "_") or "unknown")
             ns.State.mouseover.buff[key] = ns.State.mouseover.buff[tostring(aura.spellId)]
-            
-            -- if aura.spellId == 1459 then
-            --     ns.State.mouseover.buff.arcane_intellect = ns.State.mouseover.buff[tostring(aura.spellId)]
-            -- end
         end
         i = i + 1
     end
@@ -410,32 +389,27 @@ function ScanMouseoverAuras()
             debuff.remains = aura.expirationTime and (aura.expirationTime - GetTime()) or 0
             debuff.is_heal_absorb = false
             
-            local key = string.lower(aura.name and aura.name:gsub("[%s%-]+", "_") or "unknown")
+            local key = string.lower(aura.name and aura.name:gsub("[%s%-]", "_") or "unknown")
             ns.State.mouseover.debuff[key] = ns.State.mouseover.debuff[tostring(aura.spellId)]
             
             local healAbsorbSpellIDs = {
-                [49576] = true, -- Necrotic Strike
-                [12294] = true, -- Mortal Strike
+                [49576] = true,
+                [12294] = true,
             }
             if healAbsorbSpellIDs[aura.spellId] then
                 debuff.is_heal_absorb = true
             end
             
-            if UnitIsFriend("player", "mouseover") and (UnitInParty("mouseover") or UnitIsUnit("mouseover", "player")) then
+            if UnitExists("mouseover") then
                 if dispelTypes[aura.dispelName] then
                     ns.State.mouseover.dispel = true
-                    
-                    
                 end
             end
         end
         i = i + 1
     end
-    
-    -- CreateAuraProxy already supplies sane defaults via __index
 end
 
--- Paint the overlay with whatever we found
 function UpdateDebugOverlay()
     local lines = {}
     
@@ -505,7 +479,6 @@ function UpdateDebugOverlay()
     scrollFrame:SetVerticalScroll(0)
 end
 
--- Stuff our findings into Hekili's state
 local function UpdateHekiliMouseoverState()
     if not (initialized and ns.Hekili and ns.State) then return end
     
@@ -547,7 +520,6 @@ local function UpdateHekiliMouseoverState()
     UpdateDebugOverlay()
 end
 
--- Wipe mouseover state back to factory settings
 ClearMouseoverState = function()
     if not (initialized and ns.Hekili and ns.State) then 
         return 
@@ -584,8 +556,6 @@ ClearMouseoverState = function()
     
     ns.State.mo = ns.State.mouseover
     
-    -- CreateAuraProxy already supplies sane defaults via __index
-    
     lastMouseoverGUID = nil
     lastMouseoverHealth = 0
     mouseoverActive = false
@@ -593,7 +563,6 @@ ClearMouseoverState = function()
     UpdateDebugOverlay()
 end
 
--- Did the mouseover change?
 local function CheckMouseover()
     if IsMouseOverUnitFrame() then
         local guid = UnitGUID("mouseover") or "None"
@@ -610,10 +579,7 @@ local function CheckMouseover()
     end
 end
 
--- Boot sequence, engage
 function f:ADDON_LOADED(loadedAddon)
-    -- print("|cFF00FF00Hekili Healers:|r ADDON_LOADED event handler executed")
-    -- AddOn name equals the TOC filename (without extension)
     if loadedAddon == "HekiliHealers" then
         _G.Hekili = _G.Hekili or {}
         _G.Hekili.State = _G.Hekili.State or {}
@@ -642,22 +608,19 @@ function f:ADDON_LOADED(loadedAddon)
         ns.State.group_heal_needed = false
         ns.State.low_health_members = 0
 
-        -- Show What's New immediately on load if they haven't seen this version
         ShowWhatsNewIfNeeded()
     end
 end
 
 function f:PLAYER_LOGIN()
-    -- print("|cFF00FF00Hekili Healers:|r PLAYER_LOGIN event handler executed")
+    print("|cFF00FF00Hekili Healers:|r PLAYER_LOGIN event fired.")
     if not _G.Hekili then
-        -- print("|cFFFF0000Hekili Healers:|r Hekili not detected. This addon requires Hekili to function.")
+        print("|cFFFF0000Hekili Healers Error:|r _G.Hekili not found on PLAYER_LOGIN.")
         return
     end
-    -- print("|cFF00FF00Hekili Healers:|r Hekili detected")
 
     ns.Hekili = _G.Hekili
     ns.State = _G.Hekili.State
-    -- print("|cFF00FF00Hekili Healers:|r ns.Hekili and ns.State set")
 
     ns.State.mouseover = ns.State.mouseover or {}
     ns.State.mouseover.health = ns.State.mouseover.health or {}
@@ -665,27 +628,29 @@ function f:PLAYER_LOGIN()
     ns.State.mouseover.debuff = CreateAuraProxy()
     ns.State.mo = ns.State.mouseover
 
-        -- print("|cFF00FF00Hekili Healers:|r Successfully initialized.")
-
     initialized = true
+    print("|cFF00FF00Hekili Healers:|r Addon initialized.")
 
-    
-    -- print("|cFF00FF00Hekili Healers:|r The type of ns.InitializeDispelLogic is: |cFFFFD700" .. type(ns.InitializeDispelLogic) .. "|r")
-    -- print("|cFF00FF00Hekili Healers:|r Calling InitializeDispelLogic with a delay")
     C_Timer.After(2, function()
         if type(ns.InitializeDispelLogic) == "function" then
             ns.InitializeDispelLogic() 
-        else
-            -- print("|cFFFF0000Hekili Healers Error:|r ns.InitializeDispelLogic was not found or is not a function!")
+            print("|cFF00FF00Hekili Healers:|r Dispel Logic Initialized.")
         end
     end)
 
     C_Timer.After(1, function()
         if CheckGroupHealth then
             CheckGroupHealth()
+            print("|cFF00FF00Hekili Healers:|r Group Health Checked.")
         end
     end)
 
+    if ns.RecommendationUI and type(ns.RecommendationUI.Initialize) == "function" then
+        print("|cFF00FF00Hekili Healers:|r Calling RecommendationUI.Initialize().")
+        ns.RecommendationUI.Initialize()
+    else
+        print("|cFFFF0000Hekili Healers Error:|r ns.RecommendationUI or its Initialize function not found.")
+    end
 end
 
 function f:UPDATE_MOUSEOVER_UNIT()
@@ -731,7 +696,6 @@ f:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Slash it
 SLASH_HHDEBUG1 = '/hh'
 
 SlashCmdList["HHDEBUG"] = function(msg)
@@ -744,7 +708,8 @@ end
 
 SLASH_HHNEWS1 = '/hhnews'
 SlashCmdList["HHNEWS"] = function(msg)
-    msg = tostring(msg or ""):lower()
+    msg = tostring(msg or ""):
+    lower()
     if msg:find("reset") then
         HekiliHealersDB.newsShownVersion = nil
         return
