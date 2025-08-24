@@ -645,12 +645,7 @@ function f:PLAYER_LOGIN()
         end
     end)
 
-    if ns.RecommendationUI and type(ns.RecommendationUI.Initialize) == "function" then
-        print("|cFF00FF00Hekili Healers:|r Calling RecommendationUI.Initialize().")
-        ns.RecommendationUI.Initialize()
-    else
-        print("|cFFFF0000Hekili Healers Error:|r ns.RecommendationUI or its Initialize function not found.")
-    end
+    
 end
 
 function f:UPDATE_MOUSEOVER_UNIT()
