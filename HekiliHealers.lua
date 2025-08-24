@@ -613,9 +613,8 @@ function f:ADDON_LOADED(loadedAddon)
 end
 
 function f:PLAYER_LOGIN()
-    print("|cFF00FF00Hekili Healers:|r PLAYER_LOGIN event fired.")
     if not _G.Hekili then
-        print("|cFFFF0000Hekili Healers Error:|r _G.Hekili not found on PLAYER_LOGIN.")
+        print("|cFFFF0000Hekili Healers Error:|r _G.Hekili not found.")
         return
     end
 
@@ -629,19 +628,16 @@ function f:PLAYER_LOGIN()
     ns.State.mo = ns.State.mouseover
 
     initialized = true
-    print("|cFF00FF00Hekili Healers:|r Addon initialized.")
 
     C_Timer.After(2, function()
         if type(ns.InitializeDispelLogic) == "function" then
             ns.InitializeDispelLogic() 
-            print("|cFF00FF00Hekili Healers:|r Dispel Logic Initialized.")
         end
     end)
 
     C_Timer.After(1, function()
         if CheckGroupHealth then
-            CheckGroupHealth()
-            print("|cFF00FF00Hekili Healers:|r Group Health Checked.")
+            CheckGroupHealth()r Group Health Checked.")
         end
     end)
 
