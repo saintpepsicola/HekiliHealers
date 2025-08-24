@@ -123,21 +123,21 @@ local function CreateWhatsNewFrame()
     end)
 
     local dont = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    dont:SetSize(160, 24)
-    dont:SetPoint("RIGHT", close, "LEFT", -8, 0)
-    dont:SetText("Don't show again")
-    dont:SetScript("OnClick", function()
-        HekiliHealersDB.newsShownVersion = getNewsVersion()
-        frame:Hide()
-    end)
+dont:SetSize(160, 24)
+dont:SetPoint("RIGHT", close, "LEFT", -8, 0)
+dont:SetText("Don't show again")
+dont:SetScript("OnClick", function()
+    HekiliHealersDB.newsShownVersion = getNewsVersion()
+    frame:Hide()
+end)
 
     local copy = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    copy:SetSize(160, 24)
-    copy:SetPoint("BOTTOMLEFT", 14, 14)
-    copy:SetText("Print Discord Link")
-    copy:SetScript("OnClick", function()
-        print(string.format("|cFF00FF00Hekili Healers:|r Discord: %s", getDiscordURL()))
-    end)
+copy:SetSize(160, 24)
+copy:SetPoint("BOTTOMLEFT", 14, 14)
+copy:SetText("Print Discord Link")
+copy:SetScript("OnClick", function()
+    print(string.format("|cFF00FF00Hekili Healers:|r Discord: %s", getDiscordURL()))
+end)
 
     local x = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     x:SetPoint("TOPRIGHT", 2, 2)
@@ -363,7 +363,7 @@ function ScanMouseoverAuras()
             buff.down = false
             buff.remains = aura.expirationTime and (aura.expirationTime - GetTime()) or 0
             
-            local key = string.lower(aura.name and aura.name:gsub("[%s%-]", "_") or "unknown")
+            local key = string.lower(aura.name and aura.name:gsub("[\s%-]", "_") or "unknown")
             ns.State.mouseover.buff[key] = ns.State.mouseover.buff[tostring(aura.spellId)]
         end
         i = i + 1
@@ -389,7 +389,7 @@ function ScanMouseoverAuras()
             debuff.remains = aura.expirationTime and (aura.expirationTime - GetTime()) or 0
             debuff.is_heal_absorb = false
             
-            local key = string.lower(aura.name and aura.name:gsub("[%s%-]", "_") or "unknown")
+            local key = string.lower(aura.name and aura.name:gsub("[\s%-]", "_") or "unknown")
             ns.State.mouseover.debuff[key] = ns.State.mouseover.debuff[tostring(aura.spellId)]
             
             local healAbsorbSpellIDs = {
@@ -637,7 +637,7 @@ function f:PLAYER_LOGIN()
 
     C_Timer.After(1, function()
         if CheckGroupHealth then
-            CheckGroupHealth()r Group Health Checked.")
+            CheckGroupHealth()
         end
     end)
 
