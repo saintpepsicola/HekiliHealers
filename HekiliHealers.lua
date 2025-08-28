@@ -205,69 +205,81 @@ local function WipeTable(tbl)
     end
 end
 
-CheckGroupHealth = function()
+local groupHealthStatus = {}
+local lowHealthCount = 0
+
+CheckGroupHealth = function(unit)
     if not (initialized and ns.Hekili and ns.State) then
         return
     end
-    
-    local numGroupMembers = GetNumGroupMembers()
-    local inRaid = IsInRaid()
+
     local inGroup = IsInGroup()
-    local lowHealthCount = 0
-    
-    ns.State.group_heal_needed = false
-    ns.State.low_health_members = 0
-    
     if not inGroup then
+        lowHealthCount = 0
+        WipeTable(groupHealthStatus)
+        ns.State.low_health_members = 0
+        ns.State.group_heal_needed = false
         return
     end
-    
-    local playerHealth = UnitHealth("player") or 0
-    local playerMaxHealth = UnitHealthMax("player") or 1
-    local playerHealAbsorb = UnitGetTotalHealAbsorbs("player") or 0
-    local playerEffectiveHealth = math.max(0, playerHealth - playerHealAbsorb)
-    local playerEffectiveHealthPct = (playerEffectiveHealth / playerMaxHealth) * 100
-    
-    if playerEffectiveHealthPct <= healThreshold or playerHealAbsorb > (playerMaxHealth * 0.1) then
-        lowHealthCount = lowHealthCount + 1
-    end
-    
-    if inRaid then
-        for i = 1, numGroupMembers do
-            local unit = "raid" .. i
-            if unit ~= "player" and UnitExists(unit) and UnitInRange(unit) and not UnitIsUnit(unit, "player") then
-                local health = UnitHealth(unit) or 0
-                local maxHealth = UnitHealthMax(unit) or 1
-                local healAbsorb = UnitGetTotalHealAbsorbs(unit) or 0
-                local effectiveHealth = math.max(0, health - healAbsorb)
-                local effectiveHealthPct = (effectiveHealth / maxHealth) * 100
-                
-                if effectiveHealthPct <= healThreshold or healAbsorb > (maxHealth * 0.1) then
-                    lowHealthCount = lowHealthCount + 1
+
+    -- If a unit is passed, just update that unit
+    if unit and groupHealthStatus[unit] then
+        local health = UnitHealth(unit) or 0
+        local maxHealth = UnitHealthMax(unit) or 1
+        if maxHealth == 0 then return end -- Avoid division by zero
+
+        local healAbsorb = UnitGetTotalHealAbsorbs(unit) or 0
+        local effectiveHealth = math.max(0, health - healAbsorb)
+        local effectiveHealthPct = (effectiveHealth / maxHealth) * 100
+        local isLow = effectiveHealthPct <= healThreshold or healAbsorb > (maxHealth * 0.1)
+
+        if isLow and not groupHealthStatus[unit].isLow then
+            lowHealthCount = lowHealthCount + 1
+            groupHealthStatus[unit].isLow = true
+        elseif not isLow and groupHealthStatus[unit].isLow then
+            lowHealthCount = lowHealthCount - 1
+            groupHealthStatus[unit].isLow = false
+        end
+
+    else -- Full scan for group changes or initialization
+        WipeTable(groupHealthStatus)
+        lowHealthCount = 0
+        local numGroupMembers = GetNumGroupMembers()
+        local groupPrefix = IsInRaid() and "raid" or "party"
+        local groupSize = IsInRaid() and numGroupMembers or numGroupMembers -1
+
+        -- Check player
+        local pHealth = UnitHealth("player") or 0
+        local pMaxHealth = UnitHealthMax("player") or 1
+        local pHealAbsorb = UnitGetTotalHealAbsorbs("player") or 0
+        local pEffectiveHealth = math.max(0, pHealth - pHealAbsorb)
+        local pEffectiveHealthPct = (pEffectiveHealth / pMaxHealth) * 100
+        groupHealthStatus["player"] = { isLow = pEffectiveHealthPct <= healThreshold or pHealAbsorb > (pMaxHealth * 0.1) }
+        if groupHealthStatus["player"].isLow then
+            lowHealthCount = lowHealthCount + 1
+        end
+
+        -- Check group members
+        for i = 1, groupSize do
+            local memberUnit = groupPrefix .. i
+            if UnitExists(memberUnit) and UnitInRange(memberUnit) and not UnitIsUnit(memberUnit, "player") then
+                local health = UnitHealth(memberUnit) or 0
+                local maxHealth = UnitHealthMax(memberUnit) or 1
+                if maxHealth > 0 then
+                    local healAbsorb = UnitGetTotalHealAbsorbs(memberUnit) or 0
+                    local effectiveHealth = math.max(0, health - healAbsorb)
+                    local effectiveHealthPct = (effectiveHealth / maxHealth) * 100
+                    groupHealthStatus[memberUnit] = { isLow = effectiveHealthPct <= healThreshold or healAbsorb > (maxHealth * 0.1) }
+                    if groupHealthStatus[memberUnit].isLow then
+                        lowHealthCount = lowHealthCount + 1
+                    end
                 end
             end
         end
-    else
-        for i = 1, numGroupMembers - 1 do
-            local unit = "party" .. i
-            if UnitExists(unit) and UnitInRange(unit) and not UnitIsUnit(unit, "player") then
-                local health = UnitHealth(unit) or 0
-                local maxHealth = UnitHealthMax(unit) or 1
-                local healAbsorb = UnitGetTotalHealAbsorbs(unit) or 0
-                local effectiveHealth = math.max(0, health - healAbsorb)
-                local effectiveHealthPct = (effectiveHealth / maxHealth) * 100
-                
-                if effectiveHealthPct <= healThreshold or healAbsorb > (maxHealth * 0.1) then
-                    lowHealthCount = lowHealthCount + 1
-                end
-            end
-        end
     end
-    
+
     ns.State.low_health_members = lowHealthCount
     ns.State.group_heal_needed = (lowHealthCount >= healingNeededCount)
-    
-    return lowHealthCount >= healingNeededCount
 end
 
 function IsMouseOverUnitFrame()
@@ -301,7 +313,7 @@ f:SetScript("OnUpdate", function(self, elapsed)
 end)
 
 function ScanMouseoverAuras()
-    if not UnitExists("mouseover") then return end
+    if not UnitExists("mouseover") or not UnitIsFriend("player", "mouseover") or UnitIsDead("mouseover") then return end
     
     if not C_UnitAuras or not C_UnitAuras.GetBuffDataByIndex or not C_UnitAuras.GetDebuffDataByIndex then
         print("|cFFFF0000Hekili Healers Error|r: C_UnitAuras API is unavailable. Please check for addon conflicts or repair your game.")
@@ -488,7 +500,7 @@ local function UpdateHekiliMouseoverState()
     ns.State.mouseover.health = ns.State.mouseover.health or {}
     ns.State.mo = ns.State.mouseover
     
-    if UnitExists("mouseover") and IsMouseOverUnitFrame() then
+    if UnitExists("mouseover") and IsMouseOverUnitFrame() and not UnitIsDead("mouseover") then
         local health = UnitHealth("mouseover") or 0
         local maxHealth = UnitHealthMax("mouseover") or 1
         local healAbsorb = UnitGetTotalHealAbsorbs("mouseover") or 0
@@ -614,7 +626,7 @@ end
 
 function f:PLAYER_LOGIN()
     if not _G.Hekili then
-        print("|cFFFF0000Hekili Healers Error:|r _G.Hekili not found.")
+        print("|cFFFF0000Hekili Healers Error|r: _G.Hekili not found.")
         return
     end
 
@@ -667,7 +679,7 @@ function f:UNIT_HEALTH(unit)
     end
     
     if UnitInParty(unit) or UnitInRaid(unit) or unit == "player" then
-        CheckGroupHealth()
+        CheckGroupHealth(unit)
     end
 end
 
