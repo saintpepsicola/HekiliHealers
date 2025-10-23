@@ -13,6 +13,7 @@ packs.lua
 
 
 main.lua
+priest_disc.lua
 priest_holy.lua
 druid_resto.lua
 shaman_resto.lua

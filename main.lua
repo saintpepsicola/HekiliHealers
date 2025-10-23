@@ -25,6 +25,7 @@ local function EnsurePackSelection()
     if not specID then return end
 
     local desiredPack
+    if class == "PRIEST" and specID == 256 then desiredPack = string.format("%s_disc", Private.shortName) end
     if class == "PRIEST" and specID == 257 then desiredPack = string.format("%s_holy", Private.shortName) end
     if class == "DRUID" and specID == 105 then desiredPack = string.format("%s_resto", Private.shortName) end
     if class == "SHAMAN" and specID == 264 then desiredPack = string.format("%s_resto", Private.shortName) end

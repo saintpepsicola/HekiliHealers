@@ -2,19 +2,9 @@ local addonName, ns = ...
 
 ns.WhatsNew = ns.WhatsNew or {}
 
-ns.WhatsNew.NEWS_VERSION = 5
-ns.WhatsNew.DISCORD_URL = "https://discord.gg/mueqeqUE" 
+ns.WhatsNew.NEWS_VERSION = 7
+ns.WhatsNew.DISCORD_URL = "https://discord.gg/mueqeqUE"
 
 function ns.WhatsNew:getLines()
-    return {
-
-        "• Holy Paladin, Evoker, Resto Druid and Holy Priest AUTO DISPEL ",
-
-        "• Localization",
-
-        "• EVOKER - the new kid on the block! Give feedback on it as you're trying it out.",
-
-
-        "• Discord: " .. self.DISCORD_URL,
-    }
+    return {"• DISC Priest is here"}
 end
